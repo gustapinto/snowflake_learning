@@ -1,0 +1,44 @@
+use role sysadmin;
+
+create database if not exists ZENAS_ATHLEISURE_DB;
+
+use database ZENAS_ATHLEISURE_DB;
+
+drop schema if exists public;
+
+create schema if not exists PRODUCTS;
+
+use schema products;
+
+create or replace stage UNI_KLAUS_CLOTHING
+url = 's3://uni-klaus/clothing/';
+
+list @UNI_KLAUS_CLOTHING;
+
+create or replace stage UNI_KLAUS_ZMD
+url = 's3://uni-klaus/zenas_metadata/';
+
+list @UNI_KLAUS_ZMD;
+
+create or replace stage UNI_KLAUS_SNEAKERS
+url = 's3://uni-klaus/sneakers/';
+
+list @UNI_KLAUS_SNEAKERS;
+
+use role accountadmin;
+
+use database util_db;
+
+select GRADER(step, (actual = expected), actual, expected, description) as graded_results from
+(
+ SELECT
+ 'DLKW01' as step
+  ,( select count(*)
+      from ZENAS_ATHLEISURE_DB.INFORMATION_SCHEMA.STAGES
+      where stage_url ilike ('%/clothing%')
+      or stage_url ilike ('%/zenas_metadata%')
+      or stage_url like ('%/sneakers%')
+   ) as actual
+, 3 as expected
+, 'Stages for Klaus bucket look good' as description
+);
